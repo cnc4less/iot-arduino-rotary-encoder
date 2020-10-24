@@ -2,6 +2,8 @@
 
 use of rotary encoder to retrieve position and hit btn
 
+:warning: upload sketch before to connect to avoid ports burn ( if previous sketch may used D2,D3,D4 as output )
+
 ![](data/img/schematics.png)
 
 - rotary clockwise
