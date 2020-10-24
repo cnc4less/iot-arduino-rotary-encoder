@@ -1,0 +1,7 @@
+{
+    "sketch": "iot-arduino-rotary-encoder/iot-arduino-rotary-encoder.ino",
+    "port": "/dev/ttyUSB0",
+    "programmer": "USBasp",
+    "board": "arduino:avr:nano",
+    "configuration": "cpu=atmega328old"
+}
