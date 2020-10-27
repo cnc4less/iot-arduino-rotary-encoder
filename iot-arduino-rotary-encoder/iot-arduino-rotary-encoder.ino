@@ -1,167 +1,109 @@
-#include <limits.h>
+#include "config.h"
 
-// INT0 available on pin 2
-#define ENCODER_PIN_A 2
-// INT1 available on pin 3
-#define ENCODER_PIN_BTN 3
-#define ENCODER_PIN_B 4
+#include <Arduino.h>
 
-#define DEBOUNCE_ROT_US 1500
-#define DEBOUNCE_BTN_MS 50
+#include "LCD.h"
+#include "DebouncedRotary.h"
+#include "DebouncedButton.h"
 
-unsigned long timeDiff(unsigned long now, unsigned long start)
-{
-    if (start <= now)
-        return now - start;
-    else
-        return (ULONG_MAX - start) + now + 1;
-}
+// forward method
+void update_lcd();
 
-bool encoderRotAPressed = true;
-long encoderRotAPressedBegin = 0;
-bool encoderRotAReleasing = false;
-long encoderRotAReleasedBegin = 0;
-volatile int encoderRotPos = 0;
+// rotary AB handle
 
-// encoder A signal change
+DebouncedRotary rotaryAB(ENCODER_A_PIN, ENCODER_B_PIN);
+
 void ISR_encoderA()
 {
-    int stateA = digitalRead(ENCODER_PIN_A);
-    int stateB = digitalRead(ENCODER_PIN_B);
-
-    if (stateA == HIGH && encoderRotAPressed) // signal HIGH
-    {
-        if (encoderRotAReleasing)
-        {
-            if (timeDiff(micros(), encoderRotAReleasedBegin) >= DEBOUNCE_ROT_US)
-            {
-                encoderRotAPressed = false;
-                encoderRotAReleasing = false;
-            }
-        }
-        else
-        {
-            encoderRotAReleasing = true;
-            encoderRotAReleasedBegin = micros();
-        }
-    }
-    else // signal LOW
-    {
-        if (encoderRotAReleasing)
-        {
-            if (timeDiff(micros(), encoderRotAReleasedBegin) >= DEBOUNCE_ROT_US)
-            {
-                encoderRotAPressed = false;
-                encoderRotAReleasing = false;
-            }
-        }
-
-        if (encoderRotAPressed)
-        {
-            encoderRotAReleasing = false;
-        }
-        else
-        {
-            encoderRotAPressed = true;
-            encoderRotAPressedBegin = millis();
-
-            if (stateA == HIGH)
-            {
-                if (stateB == LOW)
-                    ++encoderRotPos;
-                else
-                    --encoderRotPos;
-            }
-            else
-            {
-                if (stateB == HIGH)
-                    ++encoderRotPos;
-                else
-                    --encoderRotPos;
-            }
-        }
-    }
+    rotaryAB.ISRHandler();
 }
 
-bool encoderBtnPressed = true;
-long encoderBtnPressedBegin = 0;
-bool encoderBtnReleasing = false;
-long encoderBtnReleasedBegin = 0;
-volatile int encoderBtnPressCount = 0;
-
-// encoder btn signal change
-void ISR_encoderBtn()
+int rotaryPosPrev = 0;
+void handleRotA()
 {
-    int state = digitalRead(ENCODER_PIN_BTN);
+    int rotaryPos = rotaryAB.getRotPos();
 
-    if (state == HIGH && encoderBtnPressed) // signal HIGH
+    if (rotaryPos != rotaryPosPrev)
     {
-        if (encoderBtnReleasing)
+        if (rotaryPos > rotaryPosPrev)
         {
-            if (timeDiff(millis(), encoderBtnReleasedBegin) >= DEBOUNCE_BTN_MS)
-            {
-                encoderBtnPressed = false;
-                encoderBtnReleasing = false;
-            }
+            // some stuf on CCW rotary
         }
         else
         {
-            encoderBtnReleasing = true;
-            encoderBtnReleasedBegin = millis();
-        }
-    }
-    else // signal LOW
-    {
-        if (encoderBtnReleasing)
-        {
-            if (timeDiff(millis(), encoderBtnReleasedBegin) >= DEBOUNCE_BTN_MS)
-            {
-                encoderBtnPressed = false;
-                encoderBtnReleasing = false;
-            }
+            // some stuff on CW rotary
         }
 
-        if (encoderBtnPressed)
-        {
-            encoderBtnReleasing = false;
-        }
-        else
-        {
-            encoderBtnPressed = true;
-            encoderBtnPressedBegin = millis();
-            ++encoderBtnPressCount;
-        }
+        rotaryPosPrev = rotaryPos;
+
+        update_lcd();
     }
 }
 
-int btnCnt = -1;
-int rotPos = -1;
+// rotary P handle
+
+DebouncedButton rotaryP(ENCODER_P_PIN);
+
+void ISR_encoderP()
+{
+    rotaryP.ISRHandler();
+}
+
+int rotaryPPressCountPrev = 0;
+void handleRotP()
+{
+    if (rotaryP.getPressCount() != rotaryPPressCountPrev)
+    {
+        rotaryPPressCountPrev = rotaryP.getPressCount();
+
+        update_lcd();
+    }
+}
+
+// update lcd
+
+void update_lcd()
+{    
+    lcd.setCursor(0, 0);
+    String s = String("rotPos:") + String(rotaryPosPrev);    
+    lcd.print(s);
+    int slen = s.length();
+    if (slen < LCD_COLS)
+    {
+        for (int i=0; i < LCD_COLS-slen; ++i) lcd.print(" ");
+    }
+
+    lcd.setCursor(0, 1);
+    lcd.print("rotClk:");
+    lcd.print(rotaryPPressCountPrev);
+}
+
+// setup
 
 void setup()
 {
     Serial.begin(115200);
 
-    pinMode(ENCODER_PIN_A, INPUT_PULLUP);
-    pinMode(ENCODER_PIN_B, INPUT_PULLUP);
-    pinMode(ENCODER_PIN_BTN, INPUT_PULLUP);
+    init_lcd();
+    update_lcd();
 
-    attachInterrupt(0, ISR_encoderA, CHANGE);
-    attachInterrupt(1, ISR_encoderBtn, CHANGE);
+    pinMode(ENCODER_A_PIN, INPUT_PULLUP);
+    pinMode(ENCODER_B_PIN, INPUT_PULLUP);
+    pinMode(ENCODER_P_PIN, INPUT_PULLUP);
+
+    attachInterrupt(ENCODER_A_INT, ISR_encoderA, CHANGE);
+    attachInterrupt(ENCODER_P_INT, ISR_encoderP, CHANGE);
 }
+
+// main loop
 
 void loop()
 {
-    if (btnCnt != encoderBtnPressCount)
-    {
-        btnCnt = encoderBtnPressCount;
-        Serial.print("btn pressed cnt:");
-        Serial.println(btnCnt);
-    }
+#ifdef I2C_DEVICE_SCAN
+    scan_twi_loop();
+    return;
+#endif
 
-    if (rotPos != encoderRotPos)
-    {
-        rotPos = encoderRotPos;
-        Serial.print("encoder rot pos:");
-        Serial.println(rotPos);
-    }
+    handleRotA();
+    handleRotP();
 }
