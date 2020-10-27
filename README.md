@@ -1,5 +1,14 @@
 # iot-arduino-rotary-encoder
 
+<!-- TOC -->
+- [iot-arduino-rotary-encoder](#iot-arduino-rotary-encoder)
+  * [prerequisites](#prerequisites)
+  * [config i2c address](#config-i2c-address)
+  * [build](#build)
+  * [stm32 notes](#stm32-notes)
+  * [libraries](#libraries)
+<!-- TOCEND -->
+
 use of lcd 16x2 through i2c adapter and rotary encoder to retrieve current position and hit btn
 
 :warning: upload sketch before to connect to avoid ports burn ( if previous sketch may used D2,D3,D4 as output )
