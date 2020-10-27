@@ -20,7 +20,7 @@ use of lcd 16x2 through i2c adapter and rotary encoder to retrieve current posit
 
 ## config i2c address
 
-- if unsure about your lcd i2c adapter address uncomment [I2C_DEVICE_SCAN]() macro in the config and hit a run to see on the serial terminal which address detected then set it to `LCD_ADDR`
+- if unsure about your lcd i2c adapter address uncomment [I2C_DEVICE_SCAN](https://github.com/devel0/iot-arduino-rotary-encoder/blob/417e8cbaf7d7e6ba4da0c1c66abc30daeabd7f96/iot-arduino-rotary-encoder/config.h#L23) macro in the config and hit a run to see on the serial terminal which address detected then set it to [LCD_ADDR](https://github.com/devel0/iot-arduino-rotary-encoder/blob/417e8cbaf7d7e6ba4da0c1c66abc30daeabd7f96/iot-arduino-rotary-encoder/config.h#L24)
 
 output example:
 
