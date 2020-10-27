@@ -20,7 +20,7 @@
 // 16x2 LCD
 //----------------------------------------------------------------------------
 // uncomment follow to enable I2C device address scan
-#define I2C_DEVICE_SCAN
+//#define I2C_DEVICE_SCAN
 #define LCD_ADDR 0x3f
 #define LCD_COLS 16
 #define LCD_ROWS 2
